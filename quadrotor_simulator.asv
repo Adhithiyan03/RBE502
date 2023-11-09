@@ -4,7 +4,7 @@ clc; clear; close all;
 g = 9.81;   % The gravitational acceleration [m/s^2]
 l =  0.2;   % Distance from the center of mass to each rotor [m]
 m =  0.5;   % Total mass of the quadrotor [kg]
-I = [1.24, 1.24, 2.48]; % Mass moment of inertia [kg m^2]. DIAGONAL of 3x3
+I = [1.24, 1.24, 2.48]; % Mass moment of inertia [kg m^2]
 mu = 3.0;   % Maximum thrust of each rotor [N]
 sigma = 0.01; % The proportionality constant relating thrust to torque [m]
 
@@ -20,51 +20,12 @@ r = [0; 0; 0];
 n = [0; 0; 0];
 u = [1; 0.9; 1.9; 1.5];
 
-%% LQR Test - using MATLAB LQR:
-
-% Matrices:
-A = [0, 0, 0,  0, 0, 0, 1, 0, 0, 0, 0, 0;
-     0, 0, 0,  0, 0, 0, 0, 1, 0, 0, 0, 0;
-     0, 0, 0,  0, 0, 0, 0, 0, 1, 0, 0, 0;
-     0, 0, 0,  0, 0, 0, 0, 0, 0, 1, 0, 0;
-     0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 1, 0;
-     0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 1;
-     0, 0, 0,  0, g, 0, 0, 0, 0, 0, 0, 0;
-     0, 0, 0, -g, 0, 0, 0, 0, 0, 0, 0, 0;
-     0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0;
-     0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0;
-     0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0;
-     0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0];
-B = [   0,      0,      0,      0;
-        0,      0,      0,      0;
-        0,      0,      0,      0;
-        0,      0,      0,      0;
-        0,      0,      0,      0;
-        0,      0,      0,      0;
-        0,      0,      0,      0;
-        0,      0,      0,      0;
-      1/m,    1/m,    1/m,    1/m;
-        0, l/I(1),      0,-l/I(1);
-  -l/I(2),      0, l/I(2),      0;
-  sigma/I(3),-sigma/I(3),sigma/I(3),-sigma/I(3)];
-Q = eye(12);
-R = eye(4);
-
-K = lqr(A, B, Q, R);
-
-% State Vector - desired:
-%          X  Y  Z (extra stuff)
-zd = @(t) [0; 0; 5; zeros(9,1)];
-
-% Inputs:
-ud = [m*g/4, m*g/4, m*g/4, m*g/4]';
-u  = @(t, z) ud + K*(zd(t) - z);
 
 %% Solving the initial-value problem
 
-t = linspace(0, 10, 200);
+t = linspace(0, 3, 200);
 
-[t,z] = ode45(@(t,z) quadrotor(t, z, u(t,z), p, r, n), t, z0);
+[t,z] = ode45(@(t,z) quadrotor(t, z, u, p, r, n), t, z0);
 
 
 %% Plotting the results
@@ -115,10 +76,9 @@ animation_axes = axes('Parent', animation_fig,...
 
 view(animation_axes, 3);
 
-% Editing the Sim-Drone shape:
 circleRadius = 2;
 bodySize = 1.2;
-droneLineWidth = 1;
+dron
 
 N = 10;
 Q = linspace(0,2*pi,N)';
@@ -128,10 +88,10 @@ loc = bodySize*[1 0 0; 0 1 0; -1 0 0; 0 -1 0];
 
 silhouette = plot3(0,0,0, '--', 'Color', 0.5*[1 1 1], 'LineWidth', 1 ,...
     'Parent', animation_axes);
-body = plot3(0,0,0, 'Color',lines(1), 'LineWidth', droneLineWidth,...
+body = plot3(0,0,0, 'Color',lines(1), 'LineWidth', 1,...
         'Parent', animation_axes);
 for i=1:4
-    rotor(i) = plot3(0,0,0, 'Color', lines(1), 'LineWidth', droneLineWidth,...
+    rotor(i) = plot3(0,0,0, 'Color', lines(1), 'LineWidth', 1,...
         'Parent', animation_axes);
 end
 
