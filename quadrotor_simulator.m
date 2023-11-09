@@ -13,9 +13,6 @@ p = [g l m I mu sigma];
 
 
 % Initial conditions
-z0 = zeros(12,1);
-
-
 r = [0; 0; 0];
 n = [0; 0; 0];
 u = [1; 0.9; 1.9; 1.5];
@@ -47,14 +44,14 @@ B = [   0,      0,      0,      0;
         0, l/I(1),      0,-l/I(1);
   -l/I(2),      0, l/I(2),      0;
   sigma/I(3),-sigma/I(3),sigma/I(3),-sigma/I(3)];
-Q = eye(12);
-R = eye(4);
+Q = 0.1*eye(12);
+R = 1/(2*m*g)*eye(4);
 
 K = lqr(A, B, Q, R);
 
-% State Vector - desired:
-%          X  Y  Z (extra stuff)
-zd = @(t) [0; 0; 5; zeros(9,1)];
+% State Vectors - start and final:
+z0 = [0; 0; 10; zeros(9,1)];        % starting pose
+zd = @(t) [0; 0; 5; zeros(9,1)];    % final pose
 
 % Inputs:
 ud = [m*g/4, m*g/4, m*g/4, m*g/4]';
