@@ -44,14 +44,17 @@ B = [   0,      0,      0,      0;
         0, l/I(1),      0,-l/I(1);
   -l/I(2),      0, l/I(2),      0;
   sigma/I(3),-sigma/I(3),sigma/I(3),-sigma/I(3)];
-Q = 0.1*eye(12);
-R = 1/(2*m*g)*eye(4);
+Q = 0.1*eye(12); %lower Q means better response for large tilts
+R = 1/(m*g)*eye(4); %higher R means better response for large tilts
 
 K = lqr(A, B, Q, R);
 
 % State Vectors - start and final:
-z0 = [0; 0; 10; zeros(9,1)];        % starting pose
-zd = @(t) [0; 0; 5; zeros(9,1)];    % final pose
+z0 = [0; 0; 0; pi/20; pi/20; 0; zeros(6,1)];        % starting pose
+zd = @(t) [2; -2; 9; 0; 0; 0; zeros(6,1)];    % final pose
+
+%UAV Trajectory
+uav_traj = @(t) [t/30 0 5];
 
 % Inputs:
 ud = [m*g/4, m*g/4, m*g/4, m*g/4]';
@@ -59,7 +62,7 @@ u  = @(t, z) ud + K*(zd(t) - z);
 
 %% Solving the initial-value problem
 
-t = linspace(0, 10, 200);
+t = linspace(0, 20, 300);
 
 [t,z] = ode45(@(t,z) quadrotor(t, z, u(t,z), p, r, n), t, z0);
 
@@ -126,6 +129,8 @@ loc = bodySize*[1 0 0; 0 1 0; -1 0 0; 0 -1 0];
 silhouette = plot3(0,0,0, '--', 'Color', 0.5*[1 1 1], 'LineWidth', 1 ,...
     'Parent', animation_axes);
 body = plot3(0,0,0, 'Color',lines(1), 'LineWidth', droneLineWidth,...
+        'Parent', animation_axes);
+uav = plot3(0, 0, 0, 'Color', lines(1), 'LineWidth', droneLineWidth,...
         'Parent', animation_axes);
 for i=1:4
     rotor(i) = plot3(0,0,0, 'Color', lines(1), 'LineWidth', droneLineWidth,...
