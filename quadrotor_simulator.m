@@ -15,9 +15,20 @@ p = [g l m I mu sigma];
 % Initial conditions
 r = [0; 0; 0];
 n = [0; 0; 0];
-u = [1; 0.9; 1.9; 1.5];
+u = (m*g/4)*[1; 1; 1; 1];
 
 %% LQR Test - using MATLAB LQR:
+
+% State Vectors - start and final:
+z0 = [0; 0; 0; zeros(9,1)];        % starting pose
+zd = @(t) [2*cos(t); 2*sin(t); min(t,7); 0; zeros(8,1)];    % final pose
+%zd = [4; 2; 5; 0; zeros(8,1)];
+
+%Initial input to counteract gravity at home position
+%u0 = 0.25*m*g*ones(1,4);
+
+%dz = quadrotor(0, z0, u0, p, r, n);
+
 
 % Matrices:
 A = [0, 0, 0,  0, 0, 0, 1, 0, 0, 0, 0, 0;
@@ -44,10 +55,17 @@ B = [   0,      0,      0,      0;
         0, l/I(1),      0,-l/I(1);
   -l/I(2),      0, l/I(2),      0;
   sigma/I(3),-sigma/I(3),sigma/I(3),-sigma/I(3)];
-Q = 0.1*eye(12); %lower Q means better response for large tilts
-R = 1/(m*g)*eye(4); %higher R means better response for large tilts
 
+%A = simplify(subs(jacobian(dz,z0), [z; u], [z0; u0]));
+%B = simplify(subs(jacobian(dz,u), [z; u], [z0; u0]));
+
+Q = 0.9*eye(12);
+R = 1/(mu)*eye(4);
+
+%Au = @(t,z) simplify(subs(jacobian(quadrotor(t, z, u(t,z), p, r, n), z), [z; u], [z0; u0]));
+%A = 
 K = lqr(A, B, Q, R);
+disp(eig(A - B*K));
 
 % State Vectors - start and final:
 z0 = [0; 0; 0; pi/20; pi/20; 0; zeros(6,1)];        % starting pose
@@ -56,16 +74,18 @@ zd = @(t) [2; -2; 9; 0; 0; 0; zeros(6,1)];    % final pose
 %UAV Trajectory
 uav_traj = @(t) [t/30 0 5];
 
+%K = place(A,B,zeros(12,1));
 % Inputs:
 ud = [m*g/4, m*g/4, m*g/4, m*g/4]';
 u  = @(t, z) ud + K*(zd(t) - z);
+%u  = @(t, z) ud + K*(zd - z);
 
 %% Solving the initial-value problem
 
 t = linspace(0, 20, 300);
 
 [t,z] = ode45(@(t,z) quadrotor(t, z, u(t,z), p, r, n), t, z0);
-
+zr = @(t,z) zd(t) - z
 
 %% Plotting the results
 
@@ -107,8 +127,8 @@ airspace_box_length = 10;
 
 animation_axes = axes('Parent', animation_fig,...
     'NextPlot','add','DataAspectRatio',[1 1 1],...
-    'Xlim',airspace_box_length*[-0.5 0.5],...
-    'Ylim',airspace_box_length*[-0.5 0.5],...
+    'Xlim',airspace_box_length*[-1 1],...
+    'Ylim',airspace_box_length*[-1 1],...
     'Zlim',airspace_box_length*[0 1],...
     'box','on','Xgrid','on','Ygrid','on','Zgrid','on',...
     'TickLabelInterpreter','LaTeX','FontSize',14);
@@ -136,9 +156,10 @@ for i=1:4
     rotor(i) = plot3(0,0,0, 'Color', lines(1), 'LineWidth', droneLineWidth,...
         'Parent', animation_axes);
 end
-
 tic;
 for k=1:length(t)
+    
+    f(k,1:12) = zd(k)' - z(k,:)
     
     R = [ cos(z(k,5))*cos(z(k,6)), sin(z(k,4))*sin(z(k,5))*cos(z(k,6)) - cos(z(k,4))*sin(z(k,6)), sin(z(k,4))*sin(z(k,6)) + cos(z(k,4))*sin(z(k,5))*cos(z(k,6));
           cos(z(k,5))*sin(z(k,6)), cos(z(k,4))*cos(z(k,6)) + sin(z(k,4))*sin(z(k,5))*sin(z(k,6)), cos(z(k,4))*sin(z(k,5))*sin(z(k,6)) - sin(z(k,4))*cos(z(k,6));
@@ -157,4 +178,8 @@ for k=1:length(t)
         'ZData', [ctr([1 3],3); NaN; ctr([2 4],3)] );
     pause(t(k)-toc);
     pause(0.01);
+
+    hold on
+    plot(t, f(:, 1:3));
+
 end
