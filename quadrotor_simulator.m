@@ -12,10 +12,23 @@ sigma = 0.01; % The proportionality constant relating thrust to torque [m]
 p = [g l m I mu sigma];
 
 
-% Initial conditions
+%% Initial conditions
 r = [0; 0; 0];
 n = [0; 0; 0];
-u = [1; 0.9; 1.9; 1.5];
+
+% State Vectors - start and final:
+z0 = [0; 0; 0; zeros(9,1)];       % starting pose
+
+u0 = [1 1 1 1]'*m*g/4; % Initial input - drone hovering
+
+%UAV position
+y0 = [4 2 5]';
+
+%UAV Kinematics
+uav_dyn = @(t,y) [4; 2*sin(t); 5];
+
+%Initial augmented state vector
+z0_I = [z0; y0];
 
 %% LQR Test - using MATLAB LQR:
 
@@ -32,6 +45,7 @@ A = [0, 0, 0,  0, 0, 0, 1, 0, 0, 0, 0, 0;
      0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0;
      0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0;
      0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0];
+
 B = [   0,      0,      0,      0;
         0,      0,      0,      0;
         0,      0,      0,      0;
@@ -44,28 +58,86 @@ B = [   0,      0,      0,      0;
         0, l/I(1),      0,-l/I(1);
   -l/I(2),      0, l/I(2),      0;
   sigma/I(3),-sigma/I(3),sigma/I(3),-sigma/I(3)];
-Q = 0.1*eye(12); %lower Q means better response for large tilts
-R = 1/(m*g)*eye(4); %higher R means better response for large tilts
 
-K = lqr(A, B, Q, R);
 
-% State Vectors - start and final:
-z0 = [0; 0; 0; pi/20; pi/20; 0; zeros(6,1)];        % starting pose
-zd = @(t) [2; -2; 9; 0; 0; 0; zeros(6,1)];    % final pose
+% dz = quadrotor(0, z0, u0, p, r, n);
+%B = simplify(subs(jacobian(dz,u), [z; u], [z0; u0]));
 
-%UAV Trajectory
-uav_traj = @(t) [t/30 0 5];
+Q = 0.9*eye(12);
+R = 1/(mu)*eye(4);
+C = eye(12,12);
+D = zeros(12,4);
+%A =
+% syms z1 z2 z3 z4 z5 z6 z7 z8 z9 z10 z11 z12 r1 r2 r3 n1 n2 n3 'real'
+% syms u1 u2 u3 u4 'positive'
+% zp = [z1; z2; z3; z4; z5; z6; z7; z8; z9; z10; z11; z12];
+% up = [u1; u2; u3; u4];
+% dz = quadrotor(0, zp, up, p, [r1;r2;r3], [n1;n2;n3]);
+% Au = @(t,z) (subs(jacobian(dz,zp), [zp; up], [z0; u0]));
+% Bu = @(t,z) (subs(jacobian(dz,up), [zp; up], [z0; u0]));
+% G = Au(100)
+% H = Bu(100)
+
+
+%poles = eig(A - inv(R)*B'*S);
+%N = zeros(12,4)
+syscl = ss(A,B,C,D);
+[K,S,pole] = lqr(syscl, Q, R)
+%poles = [-2 -0.5+1i -0.5+1i -0.2+0.1i -0.2-0.1i -0.4-0.2i -0.08 -0.3-0.23i -0.8 + 0.4i -1.2 -1.1 -1.5];
+%Pcl = pole(syscl)
+%K = place(A,B,pole)
+
+%zd = @(t) [2*cos(t); 2*sin(t); min(t,7); 0; zeros(8,1)];    % desired pose for test
+% zd = [4; 0; 5; 0; zeros(8,1)];
 
 % Inputs:
-ud = [m*g/4, m*g/4, m*g/4, m*g/4]';
-u  = @(t, z) ud + K*(zd(t) - z);
+ud = [1 1 1 1]'*m*g/4;
+%u  = @(t, z) ud + K*(zd(t) - z);
+u  = @(z, zd, ud, K) ud + K*(zd - z);
+% Problem parameters
+epsilon = 0.5*p(2);
 
-%% Solving the initial-value problem
+%% Phase I: Pursue
+tspan_I = [0 10];
+% t = linspace(0, 20, 300);
+options = odeset('Event', @(t,z) interceptdrone(t, z, epsilon),...
+    'RelTol', 1e-6);
 
-t = linspace(0, 20, 300);
+[t_I, z_I, te, ze] = ode45(@(t, z) augmentedSystem(t, z, quadrotor(t, z, u(z, [z(13:15, 1); uav_dyn(t, z(13:15, 1))], ud, K), p, r, n), uav_dyn, u, K),...
+    tspan_I, z0_I, options);
 
-[t,z] = ode45(@(t,z) quadrotor(t, z, u(t,z), p, r, n), t, z0);
+% %% Solving the initial-value problem
+% 
+% 
+% 
+% [t,z] = ode45(@(t,z) quadrotor(t, z, u(t,z), p, r, n), t, z0);                                                                                                                                                              zr = @(t,z) zd(t) - z
 
+%% Phase II: Return
+
+% if(isempty(te)) % if the robot failed to catch the bug
+%     % Decoupling the augmented state vector z from only phase I
+%     t = t_I;
+%     z = z_I(:,1:4);
+%     y = z_I(:,[5, 6]);
+% else
+%     tspan_II = [te, tspan_I(end)];
+%     r0_II = z_I(end,1:4)';
+% 
+%     [tk, c] = dist(tspan_II, [0.1 0.5], 2);
+%     g = @(t)[0; 0; c(find(tk <= t, 1, 'last'),:)'];
+% 
+%     rd = zeros(4,1); ud = zeros(2,1);
+% 
+%     [t_II, r_II] = ode45(@(t,r) dr(t, r, u(r, rd, ud, K), g(t) ),...
+%         tspan_II, r0_II);
+% 
+% 
+%     % Decoupling the augmented state vector z from phase I and phase II
+%     t = [t_I; t_II];
+%     r = [z_I(:,1:4); r_II];
+%     b = [z_I(:,[5, 6]); r_II(:,[1,2])]; % Since the bug is captured by the robot,
+%                                   % bug's states are equal to the robot's.
+% end
 
 %% Plotting the results
 
@@ -107,8 +179,8 @@ airspace_box_length = 10;
 
 animation_axes = axes('Parent', animation_fig,...
     'NextPlot','add','DataAspectRatio',[1 1 1],...
-    'Xlim',airspace_box_length*[-0.5 0.5],...
-    'Ylim',airspace_box_length*[-0.5 0.5],...
+    'Xlim',airspace_box_length*[-1 1],...
+    'Ylim',airspace_box_length*[-1 1],...
     'Zlim',airspace_box_length*[0 1],...
     'box','on','Xgrid','on','Ygrid','on','Zgrid','on',...
     'TickLabelInterpreter','LaTeX','FontSize',14);
@@ -136,9 +208,11 @@ for i=1:4
     rotor(i) = plot3(0,0,0, 'Color', lines(1), 'LineWidth', droneLineWidth,...
         'Parent', animation_axes);
 end
-
 tic;
 for k=1:length(t)
+    
+    %f(k,1:12) = zd(k)' - z(k,:);
+    %f(k,1:12) = zd' - z(k,:);
     
     R = [ cos(z(k,5))*cos(z(k,6)), sin(z(k,4))*sin(z(k,5))*cos(z(k,6)) - cos(z(k,4))*sin(z(k,6)), sin(z(k,4))*sin(z(k,6)) + cos(z(k,4))*sin(z(k,5))*cos(z(k,6));
           cos(z(k,5))*sin(z(k,6)), cos(z(k,4))*cos(z(k,6)) + sin(z(k,4))*sin(z(k,5))*sin(z(k,6)), cos(z(k,4))*sin(z(k,5))*sin(z(k,6)) - sin(z(k,4))*cos(z(k,6));
@@ -157,4 +231,5 @@ for k=1:length(t)
         'ZData', [ctr([1 3],3); NaN; ctr([2 4],3)] );
     pause(t(k)-toc);
     pause(0.01);
+
 end
