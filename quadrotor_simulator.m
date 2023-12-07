@@ -12,7 +12,7 @@ sigma = 0.01; % The proportionality constant relating thrust to torque [m]
 p = [g l m I mu sigma];
 
 %UAV Kinematics
-uav_dyn = @(t,y) [5; 5; 5]*0.75;
+uav_dyn = @(t,y) [4*cos(t); 4*sin(t); 0];
 
 %% Initial conditions
 r = [0; 0; 0];
@@ -22,7 +22,7 @@ n = [0; 0; 0];
 z0 = [0; 0; 0; zeros(9,1)];       % starting pose
 
 %UAV initial position
-y0 = [4 2 5]';
+y0 = [0 0 5]';
 
 %Initial augmented state vector
 z0_I = [z0; y0];
@@ -85,14 +85,20 @@ ud = [1 1 1 1]'*m*g/4;
 u  = @(z, zd, ud, K) ud + K*(zd - z);
 
 % Problem parameters
-epsilon = 0.5*p(2);
-
+% epsilon = 0.5*p(2);
+epsilon = 1;
+%Drone returns back home after UAV leaves airfield
+threshold = [10; 10; 10];
 %% Phase I: Pursue
-tspan_I = [0 25];
-% t = linspace(0, 20, 300);
-options = odeset('Event', @(t,z) interceptdrone(t, z, epsilon),...
-    'RelTol', 1e-6);
+tspan_I = [0 40];
+tspan_I = linspace(0, 40, 2000);
+options = odeset('Events', @(t,z) interceptdrone(t, z, epsilon, threshold),...
+      'RelTol', 1e-6);
+%options = odeset('Events', @(t,z) interceptdrone(t, z, epsilon),...
+  % 'Events', @(t,z) boundary_condition(t,z,threshold), 'RelTol', 1e-6);
 
+% option2 = odeset('Events', @(t,z) boundary_condition(t,z,threshold));
+% options = odeset(option1, option2)
 [t_I, z_I, te, ze] = ode45(@(t, z) augmentedSystem(t, z, uav_dyn, u, K, p, r, n),...
     tspan_I, z0_I, options);                                                                                                                                                            zr = @(t,z) zd(t) - z
 
@@ -103,13 +109,24 @@ if(isempty(te)) % if the robot failed to catch the bug
     t = t_I;
     z = z_I(:,1:12);
     y = z_I(:,13:15);
+
+    disp('Drone incapable of capturing the UAV...Returning back to base')
+
 else
+    if any(ze(13:15)' - threshold > 0)
+        disp('UAV left the airfield...Returning back to base')
+    else
+        %add disturbance and if any change in dynamics to solve
+        disp(['Ayo UAV, L + Ratio + Go touch grass + Keep crying'])
+
+        %disp('UAV capture successful...It is resisting the capture...Bringing it back to base')
+        r = [0; 0; 0];
+        n = [0; 0; 0];
+
+    end
     tspan_II = [te, tspan_I(end)];
     z0_II = z_I(end,1:12)';
-
-    r = [0; 0; 0];
-    n = [0; 0; 0];
-    zd = [zeros(12,1)]; 
+    zd = [0; 0; 1; zeros(9,1)]; 
     ud = [1 1 1 1]'*m*g/4;
 
     [t_II, z_II] = ode45(@(t,z) quadrotor(t, z, u(z, zd, ud, K), p, r, n),...
@@ -121,8 +138,14 @@ else
     % t = t_I;
     % z = z_I;
     z = [z_I(:,1:12); z_II];
+    y = [z_I(:,13:15); z_II(:,1:3)];
     % b = [z_I(:,[5, 6]); r_II(:,[1,2])]; % Since the bug is captured by the robot,
                                   % bug's states are equal to the robot's.
+end
+
+%using this to track distance until we have point-mass in simulation
+for i = 1:length(z)
+    dist_y_z(i,1) = norm(z(i,1:3) - y(i,1:3));
 end
 
 %% Plotting the results
@@ -186,12 +209,14 @@ loc = bodySize*[1 0 0; 0 1 0; -1 0 0; 0 -1 0];
 
 silhouette = plot3(0,0,0, '--', 'Color', 0.5*[1 1 1], 'LineWidth', 1 ,...
     'Parent', animation_axes);
-body = plot3(0,0,0, 'Color',lines(1), 'LineWidth', droneLineWidth,...
+body = plot3(0,0,0, 'Color', 'k', 'LineWidth', droneLineWidth,...
         'Parent', animation_axes);
-uav = plot3(0, 0, 0, 'Color', lines(1), 'LineWidth', droneLineWidth,...
+uav = plot3(0, 0, 0, 'Color', 'r', 'LineWidth', droneLineWidth,...
         'Parent', animation_axes);
 for i=1:4
-    rotor(i) = plot3(0,0,0, 'Color', lines(1), 'LineWidth', droneLineWidth,...
+    rotor(i) = plot3(0,0,0, 'Color', 'g', 'LineWidth', droneLineWidth,...
+        'Parent', animation_axes);
+    rotor2(i) = plot3(0,0,0, 'Color', 'r', 'LineWidth', droneLineWidth,...
         'Parent', animation_axes);
 end
 tic;
@@ -202,16 +227,24 @@ for k=1:length(t)
                      -sin(z(k,5)),                                 sin(z(k,4))*cos(z(k,5)),                                 cos(z(k,4))*cos(z(k,5))];
     for i=1:4
         ctr(i,:) = z(k,1:3) + loc(i,:)*R';
+        ctr2(i,:) = y(k,1:3) + loc(i,:)*R';
         pose = ones(N,1)*z(k,1:3) + (ones(N,1)*loc(i,:) + circle)*R';
+        pose2 = ones(N,1)*y(k,1:3) + (ones(N,1)*loc(i,:) + circle)*R';
         set(rotor(i), 'XData', pose(:,1), 'YData', pose(:,2),  'ZData', pose(:,3) );
+        set(rotor2(i), 'XData', pose2(:,1), 'YData', pose2(:,2),  'ZData', pose2(:,3) );
          
     end
     set(silhouette,'XData', [0, z(k,1), z(k,1), z(k,1)],...
         'YData', [0, 0, z(k,2), z(k,2)],...
         'ZData', [0, 0, 0, z(k,3)]);
+
+    set(uav, 'XData', [ctr2([1 3],1); NaN; ctr2([2 4],1)], ...
+        'YData', [ctr2([1 3],2); NaN; ctr2([2 4],2)],...
+        'ZData', [ctr2([1 3],3); NaN; ctr2([2 4],3)] );
     set(body, 'XData', [ctr([1 3],1); NaN; ctr([2 4],1)], ...
         'YData', [ctr([1 3],2); NaN; ctr([2 4],2)],...
         'ZData', [ctr([1 3],3); NaN; ctr([2 4],3)] );
+    
     pause(t(k)-toc);
     pause(0.01);
 
