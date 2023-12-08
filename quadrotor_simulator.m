@@ -22,7 +22,7 @@ n = [0; 0; 0];
 z0 = [0; 0; 0; zeros(9,1)];       % starting pose
 
 %UAV initial position
-y0 = [0 0 5]';
+y0 = [-4 -4 5]';
 
 %Initial augmented state vector
 z0_I = [z0; y0];
@@ -67,7 +67,20 @@ B = [   0,      0,      0,      0;
   sigma/I(3),-sigma/I(3),sigma/I(3),-sigma/I(3)];
 
 
-Q = 0.12*eye(12);
+q = [0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+     0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+     0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+     0, 0, 0, 0.01, 0, 0, 0, 0, 0, 0, 0, 0;
+     0, 0, 0, 0, 0.01, 0, 0, 0, 0, 0, 0, 0;
+     0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0;
+     0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0;
+     0, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0;
+     0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, 0;
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0, 0;
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0;
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+
+Q = 0.12*q;
 
 R = 1/(mu)*eye(4);
 
@@ -88,7 +101,7 @@ u  = @(z, zd, ud, K) ud + K*(zd - z);
 % epsilon = 0.5*p(2);
 epsilon = 1;
 %Drone returns back home after UAV leaves airfield
-threshold = [10; 10; 10];
+threshold = [5; 5; 10];
 %% Phase I: Pursue
 tspan_I = [0 40];
 tspan_I = linspace(0, 40, 2000);
@@ -117,8 +130,8 @@ else
         disp('UAV left the airfield...Returning back to base')
     else
         %add disturbance and if any change in dynamics to solve
-        disp(['Ayo UAV, L + Ratio + Go touch grass + Keep crying'])
-
+        disp('Ayo UAV, L + Ratio + Go touch grass + Keep crying')
+        
         %disp('UAV capture successful...It is resisting the capture...Bringing it back to base')
         r = [0; 0; 0];
         n = [0; 0; 0];
@@ -188,8 +201,8 @@ airspace_box_length = 10;
 
 animation_axes = axes('Parent', animation_fig,...
     'NextPlot','add','DataAspectRatio',[1 1 1],...
-    'Xlim',airspace_box_length*[-1 1],...
-    'Ylim',airspace_box_length*[-1 1],...
+    'Xlim',airspace_box_length*[-0.5 0.5],...
+    'Ylim',airspace_box_length*[-0.5 0.5],...
     'Zlim',airspace_box_length*[0 1],...
     'box','on','Xgrid','on','Ygrid','on','Zgrid','on',...
     'TickLabelInterpreter','LaTeX','FontSize',14);
@@ -209,12 +222,12 @@ loc = bodySize*[1 0 0; 0 1 0; -1 0 0; 0 -1 0];
 
 silhouette = plot3(0,0,0, '--', 'Color', 0.5*[1 1 1], 'LineWidth', 1 ,...
     'Parent', animation_axes);
-body = plot3(0,0,0, 'Color', 'k', 'LineWidth', droneLineWidth,...
+body = plot3(0,0,0, 'Color', 'b', 'LineWidth', droneLineWidth,...
         'Parent', animation_axes);
 uav = plot3(0, 0, 0, 'Color', 'r', 'LineWidth', droneLineWidth,...
         'Parent', animation_axes);
 for i=1:4
-    rotor(i) = plot3(0,0,0, 'Color', 'g', 'LineWidth', droneLineWidth,...
+    rotor(i) = plot3(0,0,0, 'Color', 'b', 'LineWidth', droneLineWidth,...
         'Parent', animation_axes);
     rotor2(i) = plot3(0,0,0, 'Color', 'r', 'LineWidth', droneLineWidth,...
         'Parent', animation_axes);
