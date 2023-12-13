@@ -4,11 +4,13 @@ function dz = augmentedSystem(t, z, uav_dyn, u, K, p, r, n)
 z_t = z(1:12, 1);
 y_t = z(13:15, 1);
 
-zd = [y_t; zeros(3,1); uav_dyn(t, y_t); zeros(3,1)];
+% zd = [y_t; zeros(3,1); uav_dyn(t, y_t); zeros(3,1)];
+
+zd = [y_t ; zeros(3,1); uav_dyn(t, y_t); zeros(3,1)];
 
 ud = [1 1 1 1]'*p(1)*p(3)/4;
 %need to change from uav dyn to prediction values
 dz = [quadrotor(t, z_t, u(z_t, zd, ud, K), p, r, n) ; uav_dyn(t, y_t)];
-disp(y_t)
+
 
 end
