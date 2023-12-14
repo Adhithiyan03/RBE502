@@ -16,29 +16,31 @@ r = [0; 0; 0];
 n = [0; 0; 0];
 
 % State Vectors - start and final:
-z0 = [0; 0; 0; zeros(9,1)];       % starting pose
+z0 = [5; 5; 0; zeros(9,1)];       % starting pose
 
+%UAV Kinematics
 %UAV initial position
 y0 = [2 2 5]';
 
-%Initial augmented state vector
-z0_I = [z0; y0];
-
-
-%UAV Kinematics
 freq = 2*pi*0.3;
 uav_dyn = @(t) [-sin(freq*t); cos(freq*t); 0]*2;
 % uav_dyn = @(t) [-freq*sin(freq*t); freq*cos(freq*t); 0]*1;
 
 %tailing
+% y0 = [2 2 5]';
 % uav_dyn = @(t) y0/5;
 
 %head on
+% y0 = [2 2 5]';
 % uav_dyn = @(t) -y0/10;
 
 %steep climb and descent
-uav_dyn = @(t) [0; 0; square(t)];
+% uav_dyn = @(t) [0; 0; square(t)];
 
+%
+
+%Initial augmented state vector
+z0_I = [z0; y0];
 
 
 %% LQR Test - using MATLAB LQR:
@@ -226,8 +228,8 @@ airspace_box_length = 10;
 
 animation_axes = axes('Parent', animation_fig,...
     'NextPlot','add','DataAspectRatio',[1 1 1],...
-    'Xlim',airspace_box_length*[-0.5 1.5],...
-    'Ylim',airspace_box_length*[-0.5 1.5],...
+    'Xlim',airspace_box_length*[-0 1],...
+    'Ylim',airspace_box_length*[-0 1],...
     'Zlim',airspace_box_length*[0 1],...
     'box','on','Xgrid','on','Ygrid','on','Zgrid','on',...
     'TickLabelInterpreter','LaTeX','FontSize',14);
