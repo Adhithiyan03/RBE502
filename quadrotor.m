@@ -13,7 +13,6 @@ function dz = quadrotor(t, z, u, p, r, n)
 % Forming the moment of inertia tensor based on the parametr values
 I = diag(p(4:6)); 
 
-
 % Rotation matrix mapping body fixed frame C to inertial frame E
 R = [ cos(z(5))*cos(z(6)), sin(z(4))*sin(z(5))*cos(z(6)) - cos(z(4))*sin(z(6)), sin(z(4))*sin(z(6)) + cos(z(4))*sin(z(5))*cos(z(6));
       cos(z(5))*sin(z(6)), cos(z(4))*cos(z(6)) + sin(z(4))*sin(z(5))*sin(z(6)), cos(z(4))*sin(z(5))*sin(z(6)) - sin(z(4))*cos(z(6));
@@ -22,7 +21,7 @@ R = [ cos(z(5))*cos(z(6)), sin(z(4))*sin(z(5))*cos(z(6)) - cos(z(4))*sin(z(6)), 
            
 
 % Adjusting thrust output based on feasible limits
-% u = max( min(u, p(7)), 0);
+u = max( min(u, p(7)), 0);
 
 
 % Computing temporrary variables

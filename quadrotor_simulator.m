@@ -11,9 +11,6 @@ sigma = 0.01; % The proportionality constant relating thrust to torque [m]
 %Problem parameters
 p = [g l m I mu sigma];
 
-%UAV Kinematics
-uav_dyn = @(t,y) [4*cos(t); 4*sin(t); 0];
-
 %% Initial conditions
 r = [0; 0; 0];
 n = [0; 0; 0];
@@ -22,10 +19,27 @@ n = [0; 0; 0];
 z0 = [0; 0; 0; zeros(9,1)];       % starting pose
 
 %UAV initial position
-y0 = [5 2 5]';
+y0 = [2 2 5]';
 
 %Initial augmented state vector
 z0_I = [z0; y0];
+
+
+%UAV Kinematics
+freq = 2*pi*0.3;
+uav_dyn = @(t) [-sin(freq*t); cos(freq*t); 0]*2;
+% uav_dyn = @(t) [-freq*sin(freq*t); freq*cos(freq*t); 0]*1;
+
+%tailing
+% uav_dyn = @(t) y0/5;
+
+%head on
+% uav_dyn = @(t) -y0/10;
+
+%steep climb and descent
+uav_dyn = @(t) [0; 0; square(t)];
+
+
 
 %% LQR Test - using MATLAB LQR:
 
@@ -73,16 +87,16 @@ q = [0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
      0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0;
      0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0;
      0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0;
-     0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0;
-     0, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0;
-     0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0;
+     0, 0, 0, 0, 0, 0, 0.0, 0, 0, 0, 0, 0;
+     0, 0, 0, 0, 0, 0, 0, 0.0, 0, 0, 0, 0;
+     0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0, 0, 0;
      0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0;
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0;
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 
 Q = q;
 
-R = 1/(1.5*mu)*eye(4);
+R = 1/(mu)*eye(4);
 
 [K,S,pole] = lqr(A, B, Q, R);
 %poles = [-2 -0.5+1i -0.5+1i -0.2+0.1i -0.2-0.1i -0.4-0.2i -0.08 -0.3-0.23i -0.8 + 0.4i -1.2 -1.1 -1.5];
@@ -102,30 +116,30 @@ ud = [1 1 1 1]'*m*g/4;
 u  = @(z, zd, ud, K) ud + K*(zd - z);
 
 % Problem parameters
-epsilon = 0.5*p(2);
+epsilon = 0.2*2;
 % epsilon = 1;
 %Drone returns back home after UAV leaves airfield
 threshold = [0 10;0 10;0 10];
 
 
 %% Phase I: Pursue
-tspan_I = [0 40];
-tspan_I = linspace(0, 40, 2000);
+sample = 2000;
+tspan_I = linspace(0, 40, sample);
 
 options = odeset('Events', @(t,z) interceptdrone(t, z, epsilon, threshold),...
-      'RelTol', 1e-6);
+      'RelTol', 1e-2);
 %options = odeset('Events', @(t,z) interceptdrone(t, z, epsilon),...
   % 'Events', @(t,z) boundary_condition(t,z,threshold), 'RelTol', 1e-6);
-global vel
+
 vel = y0;
 count = 0;
+[t_K, uav_traj] = ode45(@(t,uav_traj) uav_dyn(t), tspan_I, y0);
 % option2 = odeset('Events', @(t,z) boundary_condition(t,z,threshold));
 % options = odeset(option1, option2)
-[t_I, z_I, te, ze] = ode45(@(t, z) augmentedSystem(t, z, uav_dyn, u, K, p, r, n),...
+[t_I, z_I, te, ze] = ode45(@(t, z) augmentedSystem(t, z, uav_dyn, u, K, p, zeros(3,1), zeros(3,1), uav_traj),...
     tspan_I, z0_I, options);                                                                                                                                                           
 
 %% Phase II: Return
-
 if(isempty(te)) % if the robot failed to catch the bug
     % Decoupling the augmented state vector z from only phase I
     t = t_I;
@@ -142,7 +156,7 @@ else
         disp('Ayo UAV, L + Ratio + Go touch grass + Keep crying')
         
         %disp('UAV capture successful...It is resisting the capture...Bringing it back to base')
-        r = [0; 0; 0];
+        r = [1;1;1];
         n = [0; 0; 0];
     end
     tspan_II = [te, tspan_I(end)];
@@ -165,9 +179,12 @@ else
 end
 
 %using this to track distance until we have point-mass in simulation
+cost = zeros(length(z_I),1);
 for i = 1:length(z_I)
-    dist_y_z(i,1) = norm(z(i,1:3) - y(i,1:3));
+    dist_y_z(i,1) = norm(y(i,1:3) - z(i,1:3));
+
 end
+
 
 %% Plotting the results
 
@@ -179,18 +196,13 @@ for i=1:4
 end
 
 
-plot(ax(1), t,z(:,1:3), 'LineWidth', 1.5);
+plot(ax(1), t,y(:,1:3), 'LineWidth', 1.5);
 legend(ax(1), {'$x_1$', '$x_2$', '$x_3$'},... 
     'Interpreter', 'LaTeX', 'FontSize', 14);
 title(ax(1), '${\bf x}$','Interpreter','LaTeX','FontSize',14);
 xlabel(ax(1), 't','Interpreter','LaTeX','FontSize',14);
 
-% plot(ax(3), t, z(:,4:6), 'LineWidth', 1.5);
-% legend(ax(3), {'$\phi$', '$\theta$', '$\psi$'},...
-%     'Interpreter', 'LaTeX', 'FontSize', 14);
-% title(ax(3), '\boldmath$\alpha$','Interpreter','LaTeX','FontSize',14);
-
-plot(ax(3), t_I, dist_y_z, 'LineWidth', 1.5);
+plot(ax(3), t, z(:,4:6), 'LineWidth', 1.5);
 legend(ax(3), {'$\phi$', '$\theta$', '$\psi$'},...
     'Interpreter', 'LaTeX', 'FontSize', 14);
 title(ax(3), '\boldmath$\alpha$','Interpreter','LaTeX','FontSize',14);
@@ -224,8 +236,8 @@ view(animation_axes, 3);
 
 % Editing the Sim-Drone shape:
 circleRadius = 0.8;
-bodySize = 0.6;
-droneLineWidth = 0.5;
+bodySize = 0.4;
+droneLineWidth = 0.2;
 
 N = 10;
 Q = linspace(0,2*pi,N)';
