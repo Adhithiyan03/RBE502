@@ -292,6 +292,7 @@ ylabel('Y')
 zlabel('Z')
 grid on
 legend(["Drone", "UAV"])
+title("Trajectories of Drone and UAV in space")
 
 %% Animation
 animation_fig = figure;
