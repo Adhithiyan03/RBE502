@@ -120,6 +120,7 @@ z0_I = [z0; y0];
 
 
 
+
 %% LQR Test - using MATLAB LQR:
 
 % syms z1 z2 z3 z4 z5 z6 z7 z8 z9 z10 z11 z12 r1 r2 r3 n1 n2 n3 'real'
@@ -160,6 +161,7 @@ B = [   0,      0,      0,      0;
   sigma/I(3),-sigma/I(3),sigma/I(3),-sigma/I(3)];
 
 
+
 Q = [0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
      0, 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
      0, 0, 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
@@ -182,6 +184,7 @@ R = 1/(mu)*eye(4);
 
 %Alternate way of defining our system
 syscl = ss(A, B, eye(12), 0);
+
 
 
 %zd = @(t) [2*cos(t); 2*sin(t); min(t,7); 0; zeros(8,1)];    % desired pose for test
@@ -287,6 +290,7 @@ for i = 1:length(z_I)
 end
 
 
+
 %% Plotting the results
 
 for i=1:4
@@ -336,8 +340,10 @@ airspace_box_length = 10;
 
 animation_axes = axes('Parent', animation_fig,...
     'NextPlot','add','DataAspectRatio',[1 1 1],...
+
     'Xlim',airspace_box_length*[-0.5 1.5],...
     'Ylim',airspace_box_length*[-0.5 1.5],...
+
     'Zlim',airspace_box_length*[0 1],...
     'box','on','Xgrid','on','Ygrid','on','Zgrid','on',...
     'TickLabelInterpreter','LaTeX','FontSize',14);
@@ -370,6 +376,9 @@ for i=1:4
 end
 tic;
 for k=1:length(t)
+    
+    %f(k,1:12) = zd(k)' - z(k,:);
+    %f(k,1:12) = zd' - z(k,:);
     
     R = [ cos(z(k,5))*cos(z(k,6)), sin(z(k,4))*sin(z(k,5))*cos(z(k,6)) - cos(z(k,4))*sin(z(k,6)), sin(z(k,4))*sin(z(k,6)) + cos(z(k,4))*sin(z(k,5))*cos(z(k,6));
           cos(z(k,5))*sin(z(k,6)), cos(z(k,4))*cos(z(k,6)) + sin(z(k,4))*sin(z(k,5))*sin(z(k,6)), cos(z(k,4))*sin(z(k,5))*sin(z(k,6)) - sin(z(k,4))*cos(z(k,6));
