@@ -25,52 +25,76 @@ z0 = [0; 0; 0; zeros(9,1)];       % starting pose
 % z0 = [0; 0; 0; zeros(9,1)]; 
 % y0 = [6 4 8]';
 % % freq = 2*pi*0.3;
-% uav_dyn = @(t) [-sin(t); cos(t); -0.1];
-% uav_traj = @(t) y0 + [cos(t); sin(t); -0.1*t];
+% uav_dyn = @(t) [-sin(t); cos(t); 0];
+% uav_traj = @(t) y0 + [cos(t); sin(t); 0];
 
+%circle-success - only depends on the starting points
+% z0 = [0; 0; 0; zeros(9,1)]; 
+% y0 = [2 2 8]';
+% % freq = 2*pi*0.3;
+% uav_dyn = @(t) [-sin(t); cos(t); 0];
+% uav_traj = @(t) y0 + [cos(t); sin(t); 0];
 
-% tailing
-z0 = [0; 10; 0; zeros(9,1)];
-y0 = [2 2 5]';
-uav_dyn = @(t) y0*0.2;
-uav_traj = @(t) y0 + t*uav_dyn(t);
+% tailing-crash
+% z0 = [0; 0; 0; zeros(9,1)];
+% y0 = [5 5 5]';
+% uav_dyn = @(t) y0*0.2; %return performance gets worse for higher multiplier
+% uav_traj = @(t) y0 + t*uav_dyn(t);
 
-%head on
-% z0 = [0; 10; 0; zeros(9,1)];
-% y0 = [2 2 5]';
+% tailing-success
+% z0 = [0; 0; 0; zeros(9,1)];
+% y0 = [2 2 2]';
+% uav_dyn = @(t) y0*0.2; %return performance gets worse for higher multiplier
+% uav_traj = @(t) y0 + t*uav_dyn(t);
+
+%head on1
+% z0 = [0; 0; 0; zeros(9,1)];
+% y0 = [9 9 9]';
 % uav_dyn = @(t) -y0/10;
+% uav_traj = @(t) y0 + t*uav_dyn(t);
+
+%head on2
+% z0 = [0; 0; 0; zeros(9,1)];
+% y0 = [7 2 4]';
+% uav_dyn = @(t) -y0/5;
 % uav_traj = @(t) y0 + t*uav_dyn(t);
 
 %steep climb and descent
 % z0 = [0; 10; 0; zeros(9,1)];
-% y0 = [2 2 5]';
-% uav_dyn = @(t) [0; 0; square(t)];
+% y0 = [8 2 4]';
+% uav_dyn = @(t) [0; 0.4; 2*square(t)];
 % uav_traj = @(t) y0 + t*uav_dyn(t);
 
 %sinusoidal climb and descent
-% z0 = [0; 10; 0; zeros(9,1)];
+% z0 = [0; 0; 0; zeros(9,1)];
 % y0 = [1 2 5]';
-% uav_dyn = @(t) [0.5; 0; cos(t)]*2.3; %for multiplier of 2 it goes out of control while returning
+% uav_dyn = @(t) [0.5; 0; cos(t)]*2.3; 
 % uav_traj = @(t) y0 + [0.5*t; 0; sin(t)]*2.3;
 
-%spiral ascent
-% z0 = [8; 4; 0; zeros(9,1)];
+%sinusoidal climb and descent 2
+% z0 = [0; 0; 0; zeros(9,1)];
 % y0 = [1 2 5]';
-% uav_dyn = @(t) [0.5; 0; cos(t)]*2;
-% uav_traj = @(t) y0 + [0.5*t; 0; sin(t)]*2;
+% uav_dyn = @(t) [0.5; 0; cos(t)]*2.5; 
+% uav_traj = @(t) y0 + [0.5*t; 0; sin(t)]*2.5; %return crash
+
+%spiral ascent
+% z0 = [0; 0; 0; zeros(9,1)];
+% y0 = [6 4 2]';
+% uav_dyn = @(t) [-sin(t); cos(t); 0.1]*2;
+% uav_traj = @(t) y0 + [cos(t); sin(t); 0.1*t];
 
 %spiral descent
 
 % z0 = [0; 0; 0; zeros(9,1)]; 
 % y0 = [6 4 8]';
-% % freq = 2*pi*0.3;
+% freq = 2*pi*0.3;
 % uav_dyn = @(t) [-sin(t); cos(t); -0.1];
 % uav_traj = @(t) y0 + [cos(t); sin(t); -0.1*t];
 
 % %test trajectory1
 % z0 = [2; 2; 0; zeros(9,1)];
-% y0 = [6; 6; 9]
-% uav_dyn = @(t) [0.5; 0.5; -0.5*t + 0.1]*1.2 %failure to return home due to bad angles
+% y0 = [9; 9; 9]
+% uav_dyn = @(t) [-0.5; -0.5; -0.5*t + 0.1]*1.2 %failure to return home due to bad angles
 % uav_traj = @(t) y0 + t*uav_dyn(t);
 
 %test trajectory2
@@ -81,8 +105,8 @@ uav_traj = @(t) y0 + t*uav_dyn(t);
 
 % %test trajectory3
 % z0 = [0; 10; 0; zeros(9,1)];       % starting pose
-% y0 = [6; 9; 9]
-% uav_dyn = @(t) [-0.1; -0.5; (-0.2*t - 0.5)]*0.8;
+% y0 = [6; 9.5; 9.5]
+% uav_dyn = @(t) [-0.1; -0.2; (-0.2*t^2 - 0.1)]*0.6;
 % uav_traj = @(t) y0 + t*uav_dyn(t);
 
 % %test trajectory4
