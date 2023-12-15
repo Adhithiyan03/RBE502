@@ -21,56 +21,68 @@ z0 = [0; 10; 0; zeros(9,1)];       % starting pose
 %UAV Kinematics
 %UAV initial position
 % y0 = [2 2 5]';
-% 
 % freq = 2*pi*0.3;
 % uav_dyn = @(t) [-sin(freq*t); cos(freq*t); 0]*2;
-% uav_dyn = @(t) [-freq*sin(freq*t); freq*cos(freq*t); 0]*1;
+
+% uav_traj = @(t) y0 + [cos(freq*t); sin(freq*t); 0]*2/freq;
 
 % tailing
 % z0 = [0; 10; 0; zeros(9,1)];
 % y0 = [2 2 5]';
 % uav_dyn = @(t) y0*0.2;
+% uav_traj = @(t) y0 + t*uav_dyn(t);
 
 %head on
-z0 = [0; 10; 0; zeros(9,1)];
-y0 = [2 2 5]';
-uav_dyn = @(t) -y0/10;
-uav_traj = @(t) y0 -y0*t/10 
+% z0 = [0; 10; 0; zeros(9,1)];
+% y0 = [2 2 5]';
+% uav_dyn = @(t) -y0/10;
+% uav_traj = @(t) y0 + t*uav_dyn(t);
 
 %steep climb and descent
 % z0 = [0; 10; 0; zeros(9,1)];
 % y0 = [2 2 5]';
 % uav_dyn = @(t) [0; 0; square(t)];
+% uav_traj = @(t) y0 + t*uav_dyn(t);
 
 %sinusoidal climb and descent
 % z0 = [0; 10; 0; zeros(9,1)];
 % y0 = [1 2 5]';
 % uav_dyn = @(t) [0.5; 0; cos(t)]*2.3; %for multiplier of 2 it goes out of control while returning
-
+% uav_traj = @(t) y0 + [0.5*t; 0; sin(t)]*2.3;
 
 %spiral ascent
 % z0 = [8; 4; 0; zeros(9,1)];
 % y0 = [1 2 5]';
 % uav_dyn = @(t) [0.5; 0; cos(t)]*2;
+% uav_traj = @(t) y0 + [0.5*t; 0; sin(t)]*2;
 
 % %test trajectory1
 % z0 = [2; 2; 0; zeros(9,1)];
 % y0 = [6; 6; 9]
 % uav_dyn = @(t) [0.5; 0.5; -0.5*t + 0.1]*1.2 %failure to return home due to bad angles
+% uav_traj = @(t) y0 + t*uav_dyn(t);
 
 %test trajectory2
 % z0 = [2; 2; 0; zeros(9,1)];       % starting pose
 % y0 = [6; 0.1; 0.1]
 % uav_dyn = @(t) [0.5; 0.5; 0.5*t + 0.1]
+% uav_traj = @(t) y0 + t*uav_dyn(t);
 
 % %test trajectory3
+% z0 = [0; 10; 0; zeros(9,1)];       % starting pose
+% y0 = [6; 9; 9]
+% uav_dyn = @(t) [-0; -0.5; (-0.2*t - 0.5)]*0.8;
+% uav_traj = @(t) y0 + t*uav_dyn(t);
+
+% %test trajectory4
 z0 = [0; 10; 0; zeros(9,1)];       % starting pose
-y0 = [6; 9; 9]
-uav_dyn = @(t) [-0; -0.5; (-0.2*t - 0.5)]*0.8;
-uav_traj = @(t) y0 + t*uav_dyn(t);
+y0 = [6; 0.1; 8];
+uav_dyn = @(t) [0.5; 0.09*exp(0.09*t); 0];
+uav_traj = @(t) y0 + [0.5*t; exp(0.09*t); 0];
 
 %Initial augmented state vector
 z0_I = [z0; y0];
+
 
 
 %% LQR Test - using MATLAB LQR:
@@ -166,7 +178,7 @@ count = 0;
 % [t_K, uav_traj] = ode45(@(t,uav_traj) uav_dyn(t), tspan_I, y0);
 % option2 = odeset('Events', @(t,z) boundary_condition(t,z,threshold));
 % options = odeset(option1, option2)
-[t_I, z_I, te, ze] = ode45(@(t, z) augmentedSystem(t, z, uav_dyn, u, K, p, zeros(3,1), zeros(3,1), uav_traj, tspan_I),...
+[t_I, z_I, te, ze] = ode45(@(t, z) augmentedSystem(t, z, uav_dyn, u, K, p, zeros(3,1), zeros(3,1), uav_traj),...
     tspan_I, z0_I, options);                                                                                                                                                           
 
 %% Phase II: Return
