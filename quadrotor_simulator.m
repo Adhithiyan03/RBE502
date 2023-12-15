@@ -32,9 +32,10 @@ z0 = [0; 10; 0; zeros(9,1)];       % starting pose
 % uav_dyn = @(t) y0*0.2;
 
 %head on
-% z0 = [0; 10; 0; zeros(9,1)];
-% y0 = [2 2 5]';
-% uav_dyn = @(t) -y0/10;
+z0 = [0; 10; 0; zeros(9,1)];
+y0 = [2 2 5]';
+uav_dyn = @(t) -y0/10;
+uav_traj = @(t) y0 -y0*t/10 
 
 %steep climb and descent
 % z0 = [0; 10; 0; zeros(9,1)];
@@ -44,7 +45,7 @@ z0 = [0; 10; 0; zeros(9,1)];       % starting pose
 %sinusoidal climb and descent
 % z0 = [0; 10; 0; zeros(9,1)];
 % y0 = [1 2 5]';
-% uav_dyn = @(t) [0.5; 0; cos(t)]*2; %for multiplier of 2 it goes out of control while returning
+% uav_dyn = @(t) [0.5; 0; cos(t)]*2.3; %for multiplier of 2 it goes out of control while returning
 
 
 %spiral ascent
@@ -63,9 +64,10 @@ z0 = [0; 10; 0; zeros(9,1)];       % starting pose
 % uav_dyn = @(t) [0.5; 0.5; 0.5*t + 0.1]
 
 % %test trajectory3
-% z0 = [0; 10; 0; zeros(9,1)];       % starting pose
-% y0 = [6; 9; 9]
-% uav_dyn = @(t) [-0; -0.5; (-0.2*t - 0.5)]*1.5;
+z0 = [0; 10; 0; zeros(9,1)];       % starting pose
+y0 = [6; 9; 9]
+uav_dyn = @(t) [-0; -0.5; (-0.2*t - 0.5)]*0.8;
+uav_traj = @(t) y0 + t*uav_dyn(t);
 
 %Initial augmented state vector
 z0_I = [z0; y0];
@@ -111,20 +113,18 @@ B = [   0,      0,      0,      0;
   sigma/I(3),-sigma/I(3),sigma/I(3),-sigma/I(3)];
 
 
-q = [0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+Q = [0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
      0, 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
      0, 0, 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-     0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0;
-     0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0;
-     0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0;
+     0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0;
+     0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0;
+     0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0;
      0, 0, 0, 0, 0, 0, 0.0, 0, 0, 0, 0, 0;
      0, 0, 0, 0, 0, 0, 0, 0.0, 0, 0, 0, 0;
      0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0, 0, 0;
      0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0;
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0;
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
-
-Q = q;
 
 R = 1/(mu)*eye(4);
 
@@ -163,10 +163,10 @@ options = odeset('Events', @(t,z) interceptdrone(t, z, epsilon, threshold),...
 
 vel = y0;
 count = 0;
-[t_K, uav_traj] = ode45(@(t,uav_traj) uav_dyn(t), tspan_I, y0);
+% [t_K, uav_traj] = ode45(@(t,uav_traj) uav_dyn(t), tspan_I, y0);
 % option2 = odeset('Events', @(t,z) boundary_condition(t,z,threshold));
 % options = odeset(option1, option2)
-[t_I, z_I, te, ze] = ode45(@(t, z) augmentedSystem(t, z, uav_dyn, u, K, p, zeros(3,1), zeros(3,1), uav_traj),...
+[t_I, z_I, te, ze] = ode45(@(t, z) augmentedSystem(t, z, uav_dyn, u, K, p, zeros(3,1), zeros(3,1), uav_traj, tspan_I),...
     tspan_I, z0_I, options);                                                                                                                                                           
 
 %% Phase II: Return
@@ -179,33 +179,57 @@ if(isempty(te)) % if the robot failed to catch the bug
     disp('Drone incapable of capturing the UAV...Returning to base')
 
 else
-    if (any(threshold (:,1) > ze(13:15)') || any(ze(13:15)' > threshold(:,2)))
-        disp('UAV left the airfield...Returning empty handed')
-    else
-        %add disturbance and if any change in dynamics to solve
-        disp('Target acquired. Its coming home!')
-        
-        %disp('UAV capture successful...It is resisting the capture...Bringing it back to base')
-        r = [1;1;1];
-        n = [0; 0; 0];
-    end
+
     tspan_II = [te, tspan_I(end)];
     z0_II = z_I(end,1:12)';
     zd = [0; 0; 1; zeros(9,1)]; 
     ud = [1 1 1 1]'*m*g/4;
 
-    [t_II, z_II] = ode45(@(t,z) quadrotor(t, z, u(z, zd, ud, K), p, r, n),...
+    if (any(threshold (:,1) > ze(13:15)') || any(ze(13:15)' > threshold(:,2)))
+        disp('UAV left the airfield...Returning empty handed')
+
+        [t_II, z_II] = ode45(@(t,z) quadrotor(t, z, u(z, zd, ud, K), p, r, n),...
         tspan_II, z0_II);
 
+        
+    else
+        %add disturbance and if any change in dynamics to solve
+        disp('Target acquired. Its coming home!')
+        
+        %disp('UAV capture successful...It is resisting the capture...Bringing it back to base')
+        r = @(t) [0.1*sin(t); 0; 0.1*square(t)]*0
+        n = @(t) [0.1; 0.2; 0.3]*0;
 
+        % q = [0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+        %      0, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+        %      0, 0, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+        %      0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0;
+        %      0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0;
+        %      0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0;
+        %      0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0;
+        %      0, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0;
+        %      0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0;
+        %      0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0;
+        %      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0;
+        %      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+        % 
+        % Q = q;
+        % 
+        % R = 1/(mu)*eye(4);
+        % 
+        % [K,S,pole] = lqr(A, B, Q, R);
+    [t_II, z_II] = ode45(@(t,z) quadrotor(t, z, u(z, zd, ud, K), p, r(t), n(t)),...
+        tspan_II, z0_II);
+        
+
+    end
     % Decoupling the augmented state vector z from phase I and phase II
     t = [t_I; t_II];
     % t = t_I;
     % z = z_I;
     z = [z_I(:,1:12); z_II];
     y = [z_I(:,13:15); z_II(:,1:3)];
-    % b = [z_I(:,[5, 6]); r_II(:,[1,2])]; % Since the bug is captured by the robot,
-                                  % bug's states are equal to the robot's.
+
 end
 
 %using this to track distance until we have point-mass in simulation
