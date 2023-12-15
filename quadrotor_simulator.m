@@ -20,17 +20,20 @@ z0 = [0; 0; 0; zeros(9,1)];       % starting pose
 
 %UAV Kinematics
 %UAV initial position
-% y0 = [2 2 5]';
-% freq = 2*pi*0.3;
-% uav_dyn = @(t) [-sin(freq*t); cos(freq*t); 0]*2;
 
-% uav_traj = @(t) y0 + [cos(freq*t); sin(freq*t); 0]*2/freq;
+%circling
+% z0 = [0; 0; 0; zeros(9,1)]; 
+% y0 = [6 4 8]';
+% % freq = 2*pi*0.3;
+% uav_dyn = @(t) [-sin(t); cos(t); -0.1];
+% uav_traj = @(t) y0 + [cos(t); sin(t); -0.1*t];
+
 
 % tailing
-% z0 = [0; 10; 0; zeros(9,1)];
-% y0 = [2 2 5]';
-% uav_dyn = @(t) y0*0.2;
-% uav_traj = @(t) y0 + t*uav_dyn(t);
+z0 = [0; 10; 0; zeros(9,1)];
+y0 = [2 2 5]';
+uav_dyn = @(t) y0*0.2;
+uav_traj = @(t) y0 + t*uav_dyn(t);
 
 %head on
 % z0 = [0; 10; 0; zeros(9,1)];
@@ -56,6 +59,14 @@ z0 = [0; 0; 0; zeros(9,1)];       % starting pose
 % uav_dyn = @(t) [0.5; 0; cos(t)]*2;
 % uav_traj = @(t) y0 + [0.5*t; 0; sin(t)]*2;
 
+%spiral descent
+
+% z0 = [0; 0; 0; zeros(9,1)]; 
+% y0 = [6 4 8]';
+% % freq = 2*pi*0.3;
+% uav_dyn = @(t) [-sin(t); cos(t); -0.1];
+% uav_traj = @(t) y0 + [cos(t); sin(t); -0.1*t];
+
 % %test trajectory1
 % z0 = [2; 2; 0; zeros(9,1)];
 % y0 = [6; 6; 9]
@@ -69,10 +80,10 @@ z0 = [0; 0; 0; zeros(9,1)];       % starting pose
 % uav_traj = @(t) y0 + t*uav_dyn(t);
 
 % %test trajectory3
-z0 = [0; 10; 0; zeros(9,1)];       % starting pose
-y0 = [6; 9; 9]
-uav_dyn = @(t) [-0.1; -0.5; (-0.2*t - 0.5)]*0.8;
-uav_traj = @(t) y0 + t*uav_dyn(t);
+% z0 = [0; 10; 0; zeros(9,1)];       % starting pose
+% y0 = [6; 9; 9]
+% uav_dyn = @(t) [-0.1; -0.5; (-0.2*t - 0.5)]*0.8;
+% uav_traj = @(t) y0 + t*uav_dyn(t);
 
 % %test trajectory4
 % z0 = [0; 0; 0; zeros(9,1)];       % starting pose
