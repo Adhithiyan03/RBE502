@@ -27,20 +27,30 @@ z0 = [0; 10; 0; zeros(9,1)];       % starting pose
 % uav_dyn = @(t) [-freq*sin(freq*t); freq*cos(freq*t); 0]*1;
 
 % tailing
-y0 = [2 2 5]';
-uav_dyn = @(t) y0/5;
+% z0 = [0; 10; 0; zeros(9,1)];
+% y0 = [2 2 5]';
+% uav_dyn = @(t) y0*0.2;
 
 %head on
+% z0 = [0; 10; 0; zeros(9,1)];
 % y0 = [2 2 5]';
 % uav_dyn = @(t) -y0/10;
 
 %steep climb and descent
+% z0 = [0; 10; 0; zeros(9,1)];
 % y0 = [2 2 5]';
 % uav_dyn = @(t) [0; 0; square(t)];
 
 %sinusoidal climb and descent
-y0 = [1 2 5]';
-uav_dyn = @(t) [0.5; 0; cos(t)]*2; %for multiplier of 2 it goes out of control while returning
+% z0 = [0; 10; 0; zeros(9,1)];
+% y0 = [1 2 5]';
+% uav_dyn = @(t) [0.5; 0; cos(t)]*2; %for multiplier of 2 it goes out of control while returning
+
+
+%spiral ascent
+% z0 = [8; 4; 0; zeros(9,1)];
+% y0 = [1 2 5]';
+% uav_dyn = @(t) [0.5; 0; cos(t)]*2;
 
 % %test trajectory1
 % z0 = [2; 2; 0; zeros(9,1)];
