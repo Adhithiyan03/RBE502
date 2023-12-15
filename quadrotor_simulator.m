@@ -16,7 +16,7 @@ r = [0; 0; 0];
 n = [0; 0; 0];
 
 % State Vectors - start and final:
-z0 = [0; 10; 0; zeros(9,1)];       % starting pose
+z0 = [0; 0; 0; zeros(9,1)];       % starting pose
 
 %UAV Kinematics
 %UAV initial position
@@ -69,16 +69,16 @@ z0 = [0; 10; 0; zeros(9,1)];       % starting pose
 % uav_traj = @(t) y0 + t*uav_dyn(t);
 
 % %test trajectory3
-% z0 = [0; 10; 0; zeros(9,1)];       % starting pose
-% y0 = [6; 9; 9]
-% uav_dyn = @(t) [-0; -0.5; (-0.2*t - 0.5)]*0.8;
-% uav_traj = @(t) y0 + t*uav_dyn(t);
+z0 = [0; 10; 0; zeros(9,1)];       % starting pose
+y0 = [6; 9; 9]
+uav_dyn = @(t) [-0.1; -0.5; (-0.2*t - 0.5)]*0.8;
+uav_traj = @(t) y0 + t*uav_dyn(t);
 
 % %test trajectory4
-z0 = [0; 10; 0; zeros(9,1)];       % starting pose
-y0 = [6; 0.1; 8];
-uav_dyn = @(t) [0.5; 0.09*exp(0.09*t); 0];
-uav_traj = @(t) y0 + [0.5*t; exp(0.09*t); 0];
+% z0 = [0; 0; 0; zeros(9,1)];       % starting pose
+% y0 = [5; 0.1; 8];
+% uav_dyn = @(t) [0.5; 0.09*exp(0.09*t); 0];
+% uav_traj = @(t) y0 + [0.5*t; exp(0.09*t); 0];
 
 %Initial augmented state vector
 z0_I = [z0; y0];
@@ -283,7 +283,15 @@ legend(ax(4), {'$\omega_1$', '$\omega_2$', '$\omega_3$'},...
     'Interpreter', 'LaTeX', 'FontSize', 14);
 title(ax(4), '\boldmath$\omega$','Interpreter','LaTeX','FontSize',14);
 
-
+figure(2)
+plot3(z(1:length(t_I),1),z(1:length(t_I),2),z(1:length(t_I),3), 'g', 'LineWidth', 3)
+hold on
+plot3(y(1:length(t_I),1),y(1:length(t_I),2),y(1:length(t_I),3), 'r', 'LineWidth', 2)
+xlabel('X')
+ylabel('Y')
+zlabel('Z')
+grid on
+legend(["Drone", "UAV"])
 
 %% Animation
 animation_fig = figure;
