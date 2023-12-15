@@ -16,28 +16,46 @@ r = [0; 0; 0];
 n = [0; 0; 0];
 
 % State Vectors - start and final:
-z0 = [5; 5; 0; zeros(9,1)];       % starting pose
+z0 = [0; 10; 0; zeros(9,1)];       % starting pose
 
 %UAV Kinematics
 %UAV initial position
-y0 = [2 2 5]';
-
-freq = 2*pi*0.3;
-uav_dyn = @(t) [-sin(freq*t); cos(freq*t); 0]*2;
+% y0 = [2 2 5]';
+% 
+% freq = 2*pi*0.3;
+% uav_dyn = @(t) [-sin(freq*t); cos(freq*t); 0]*2;
 % uav_dyn = @(t) [-freq*sin(freq*t); freq*cos(freq*t); 0]*1;
 
-%tailing
-% y0 = [2 2 5]';
-% uav_dyn = @(t) y0/5;
+% tailing
+y0 = [2 2 5]';
+uav_dyn = @(t) y0/5;
 
 %head on
 % y0 = [2 2 5]';
 % uav_dyn = @(t) -y0/10;
 
 %steep climb and descent
+% y0 = [2 2 5]';
 % uav_dyn = @(t) [0; 0; square(t)];
 
-%
+%sinusoidal climb and descent
+y0 = [7 2 5]';
+uav_dyn = @(t) [0.5; 0; cos(t)];
+
+% %test trajectory1
+z0 = [2; 2; 0; zeros(9,1)];
+y0 = [6; 6; 9]
+uav_dyn = @(t) [0.5; 0.5; -0.5*t + 0.1]*1.2 %failure to return home due to bad angles
+
+%test trajectory2
+% z0 = [2; 2; 0; zeros(9,1)];       % starting pose
+% y0 = [6; 0.1; 0.1]
+% uav_dyn = @(t) [0.5; 0.5; 0.5*t + 0.1]
+
+% %test trajectory3
+% z0 = [0; 10; 0; zeros(9,1)];       % starting pose
+% y0 = [6; 9; 9]
+% uav_dyn = @(t) [-0; -0.5; (-0.2*t - 0.5)]*1.5;
 
 %Initial augmented state vector
 z0_I = [z0; y0];
@@ -148,14 +166,14 @@ if(isempty(te)) % if the robot failed to catch the bug
     z = z_I(:,1:12);
     y = z_I(:,13:15);
 
-    disp('Drone incapable of capturing the UAV...Returning back to base')
+    disp('Drone incapable of capturing the UAV...Returning to base')
 
 else
     if (any(threshold (:,1) > ze(13:15)') || any(ze(13:15)' > threshold(:,2)))
-        disp('UAV left the airfield...Returning back to base')
+        disp('UAV left the airfield...Returning empty handed')
     else
         %add disturbance and if any change in dynamics to solve
-        disp('Ayo UAV, L + Ratio + Go touch grass + Keep crying')
+        disp('Target acquired. Its coming home!')
         
         %disp('UAV capture successful...It is resisting the capture...Bringing it back to base')
         r = [1;1;1];
@@ -228,8 +246,8 @@ airspace_box_length = 10;
 
 animation_axes = axes('Parent', animation_fig,...
     'NextPlot','add','DataAspectRatio',[1 1 1],...
-    'Xlim',airspace_box_length*[-0 1],...
-    'Ylim',airspace_box_length*[-0 1],...
+    'Xlim',airspace_box_length*[-0.5 1.5],...
+    'Ylim',airspace_box_length*[-0.5 1.5],...
     'Zlim',airspace_box_length*[0 1],...
     'box','on','Xgrid','on','Ygrid','on','Zgrid','on',...
     'TickLabelInterpreter','LaTeX','FontSize',14);
