@@ -39,13 +39,13 @@ uav_dyn = @(t) y0/5;
 % uav_dyn = @(t) [0; 0; square(t)];
 
 %sinusoidal climb and descent
-y0 = [7 2 5]';
-uav_dyn = @(t) [0.5; 0; cos(t)];
+y0 = [1 2 5]';
+uav_dyn = @(t) [0.5; 0; cos(t)]*2; %for multiplier of 2 it goes out of control while returning
 
 % %test trajectory1
-z0 = [2; 2; 0; zeros(9,1)];
-y0 = [6; 6; 9]
-uav_dyn = @(t) [0.5; 0.5; -0.5*t + 0.1]*1.2 %failure to return home due to bad angles
+% z0 = [2; 2; 0; zeros(9,1)];
+% y0 = [6; 6; 9]
+% uav_dyn = @(t) [0.5; 0.5; -0.5*t + 0.1]*1.2 %failure to return home due to bad angles
 
 %test trajectory2
 % z0 = [2; 2; 0; zeros(9,1)];       % starting pose
