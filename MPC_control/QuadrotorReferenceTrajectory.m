@@ -4,10 +4,14 @@ function [ xdesired ] = QuadrotorReferenceTrajectory( t )
 
 % Copyright 2019 The MathWorks, Inc.
 
-%#codegen
-x =6*sin(t/3);
-y = -6*sin(t/3).*cos(t/3);
-z = 6*cos(t/3);
+ x0 =2
+ y0 =2
+ z0 =5
+%Copyright 2019 The MathWorks, Inc.
+ freq =2*pi*0.4;
+ y =y0+2*cos(freq*t);
+ x = x0-2*sin(freq*t);
+ z = z0+zeros(1,length(t));
 phi = zeros(1,length(t));
 theta = zeros(1,length(t));
 psi = zeros(1,length(t));
